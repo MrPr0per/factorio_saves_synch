@@ -3,15 +3,16 @@ import time
 
 import yadisk
 from enum import Enum, auto
-from colorama import Fore, Style
+from colorama import Fore, Style, init
 import os
 import datetime
 
 # ПРЕДУПРЕЖДЕНИЕ: в сохранении файла нельзя использовать слово date и квадратные скобки []!
-name = 'your_name'
-factorio_launch_path = r'C:\Games\Factorio\bin\x64\factorio.exe'
-factorio_saves_path = r'C:\Users\admin\AppData\Roaming\Factorio\saves'
-yadisk_token = 'your_token'
+
+name = '_'
+factorio_launch_path = '_'
+factorio_saves_path = '_'
+yadisk_token = '_'
 
 
 class UpdateModes(Enum):
@@ -20,6 +21,22 @@ class UpdateModes(Enum):
 
     upload_save = auto()
     download_save = auto()
+
+
+def load_settings():
+    global name, factorio_launch_path, factorio_saves_path, yadisk_token
+    with open('settings.txt', 'r') as file:
+        for line in file.readlines():
+            var, value = map(lambda x: x.strip(), line.split('='))
+            value = eval(value)
+            if var == 'name':
+                name = value
+            elif var == 'factorio_launch_path':
+                factorio_launch_path = value
+            elif var == 'factorio_saves_path':
+                factorio_saves_path = value
+            elif var == 'yadisk_token':
+                yadisk_token = value
 
 
 def colored(text, color):
@@ -141,9 +158,11 @@ def update_saves(mode):
     if logging: print('} ок')
 
 
+init()
 develop_mode = False
 logging = True
 column_width = 50
+load_settings()
 ycloud_manager = yadisk.YaDisk(token=yadisk_token)
 
 if logging: print('start')
