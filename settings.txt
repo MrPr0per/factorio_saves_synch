@@ -1,0 +1,4 @@
+name = 'joker'
+factorio_launch_path = r'C:\Games\Factorio\bin\x64\factorio.exe'
+factorio_saves_path = r'C:\Users\admin\AppData\Roaming\Factorio\saves'
+yadisk_token = 'your_token'
