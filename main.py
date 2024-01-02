@@ -35,32 +35,12 @@ class Logger:
         self.current_deep = 0
 
     def log_if_necessary(self, text, deep_delta=0, end='\n'):
-        if self.enable_logging:
-            if deep_delta < 0:
-                self.current_deep += deep_delta
+        if not self.enable_logging: return
 
-            print(('    ' * self.current_deep + text).ljust(self.column_width), end=end)
+        if deep_delta < 0: self.current_deep += deep_delta
+        print(('    ' * self.current_deep + text).ljust(self.column_width), end=end)
+        if deep_delta > 0: self.current_deep += deep_delta
 
-            if deep_delta > 0:
-                self.current_deep += deep_delta
-
-
-# def load_settings():
-#     settings = json.loads(open('settings.json').read())
-#     return se
-#
-#     with open('settings.json', 'r') as file:
-#         for line in file.readlines():
-#             var, value = map(lambda x: x.strip(), line.split('='))
-#             value = eval(value)
-#             if var == 'name':
-#                 name = value
-#             elif var == 'factorio_launch_path':
-#                 factorio_launch_path = value
-#             elif var == 'factorio_saves_path':
-#                 factorio_saves_path = value
-#             elif var == 'yadisk_token':
-#                 yadisk_token = value
 
 def launch_factorio(factorio_exe_path, develop_mode):
     if develop_mode:
@@ -81,11 +61,6 @@ def get_players_list(client: yadisk.Client, logger: Logger):
 
 def update_players_list(mode: PlayersUpdateModes, client: yadisk.Client, name: str, players, logger: Logger):
     logger.log_if_necessary('обновление списка игроков онлайн {', deep_delta=1)
-
-    # logger.log_if_necessary('получение списка...', end='')
-    # client.download("/factorio/players_online.txt", "players_online.txt")
-    # with open('players_online.txt', 'r') as file:
-    #     players = list(map(lambda x: x.strip(), file.readlines()))
 
     if mode == PlayersUpdateModes.add_my_name:
         logger.log_if_necessary(f'готово: users_online = {players} + {name}')
@@ -119,6 +94,7 @@ def get_newest_local_save(factorio_saves_path):
             newest_save_filepath = filepath
             newest_save_datetime = save_datetime
 
+    # время в UTC
     newest_save_datetime += datetime.timedelta(seconds=time.timezone)
     tz = datetime.timezone(datetime.timedelta(seconds=0))
     newest_save_datetime = newest_save_datetime.replace(tzinfo=tz)
@@ -160,10 +136,6 @@ def update_saves(mode: SavesUpdateModes, client: yadisk.Client, factorio_saves_p
         else:
             logger.log_if_necessary('скачивание сохраниения...', end='')
             filename = yadisk_filepath[yadisk_filepath.rfind('/') + 1:]
-            # if 'date=' not in filename:
-            #     new_filename = f'{filename[:filename.find(".")]} (date=[{yadisk_datetime.strftime("%Y-%m-%d %H-%M-%S")}]){filename[filename.find("."):]}'
-            # else:
-            #     new_filename = filename
             client.download(yadisk_filepath, os.path.join(factorio_saves_path, filename))
             logger.log_if_necessary('готово')
     elif mode == SavesUpdateModes.upload_save:
@@ -172,69 +144,31 @@ def update_saves(mode: SavesUpdateModes, client: yadisk.Client, factorio_saves_p
         else:
             logger.log_if_necessary('отгрузка сохранения, не закрывайте программу...', end='')
 
+            # отгружаем файл с датой и временем
             with open('save_datetime.txt', 'w') as f:
                 f.write(local_datetime.strftime("%Y-%m-%d %H:%M:%S.%f"))
             if client.exists('factorio/save_datetime.txt'):
                 client.remove('factorio/save_datetime.txt', permanently=True)
             client.upload('save_datetime.txt', 'factorio/save_datetime.txt')
 
+            # отгружаем сам файл сохранения
             if yadisk_filepath is not None:
                 client.remove(yadisk_filepath, permanently=True)
-                # old_disk_filename = yadisk_filepath[yadisk_filepath.rfind('/') + 1:]
-                # client.remove(f"/factorio/{old_disk_filename}", permanently=True)
             local_filename = os.path.basename(local_filepath)
-            # if 'date=' not in filename:
-            #     new_filename = f'{filename[:filename.find(".")]} (date=[{local_datetime.strftime("%Y-%m-%d %H-%M-%S")}]){filename[filename.find("."):]}'
-            # else:
-            #     new_filename = filename
             client.upload(local_filepath, f'disk:/factorio/{local_filename}')
+
             logger.log_if_necessary('готово')
     else:
         raise Exception(f'указан неверный режим обновления списка игроков: {mode}')
     logger.log_if_necessary('} ок', deep_delta=-1)
 
 
-# def update_saves(mode: UpdateModes, client: yadisk.Client, factorio_saves_path, logger: Logger):
-#     logger.log_if_necessary('обновление сохранений {')
-#     local_path, local_date = get_newest_local_save()
-#     disk_path, disk_date = get_newest_yadisk_save()
-#     if mode == UpdateModes.download_save:
-#         logger.log_if_necessary('скачивание сохраниения...', end='')
-#         if disk_date is not None and local_date < disk_date:
-#             filename = disk_path[disk_path.rfind('/') + 1:]
-#             if 'date=' not in filename:
-#                 new_filename = f'{filename[:filename.find(".")]} (date=[{disk_date.strftime("%Y-%m-%d %H-%M-%S")}]){filename[filename.find("."):]}'
-#             else:
-#                 new_filename = filename
-#             client.download(disk_path, rf"{factorio_saves_path}\{new_filename}")
-#             logger.log_if_necessary('готово')
-#         else:
-#             logger.log_if_necessary('скачивание не требуется')
-#     elif mode == UpdateModes.upload_save:
-#         logger.log_if_necessary('отгрузка сохраниения, не закрывайте программу...', end='')
-#         if disk_date is None or local_date > disk_date:
-#             if disk_date is not None:
-#                 old_disk_filename = disk_path[disk_path.rfind('/') + 1:]
-#                 client.remove(f"/factorio/{old_disk_filename}", permanently=True)
-#             filename = local_path[local_path.rfind('/') + 1:]
-#             if 'date=' not in filename:
-#                 new_filename = f'{filename[:filename.find(".")]} (date=[{local_date.strftime("%Y-%m-%d %H-%M-%S")}]){filename[filename.find("."):]}'
-#             else:
-#                 new_filename = filename
-#             client.upload(local_path, f'disk:/factorio/{new_filename}')
-#             logger.log_if_necessary('готово')
-#         else:
-#             logger.log_if_necessary('отгрузка не требуется')
-#     else:
-#         raise Exception('указан неверный режим обновления списка игроков')
-#     logger.log_if_necessary('} ок')
-
-
 def main():
+    # инициализация
     colorama.init()
     open('players_online.txt', 'w').close()
     open('save_datetime.txt', 'w').close()
-    develop_mode = True
+    develop_mode = False
     settings = json.loads(open('settings.json').read())
     yadisk_token = settings['yadisk_token']
     factorio_exe_path = settings['factorio_exe_path']
@@ -260,7 +194,7 @@ def main():
         print(Fore.GREEN)
         print(f'    в данный момент никто не играет')
         print(Style.RESET_ALL)
-        update_saves(SavesUpdateModes.download_save, client, settings['factorio_saves_path'], logger)
+        update_saves(SavesUpdateModes.download_save, client, factorio_saves_path, logger)
 
     update_players_list(PlayersUpdateModes.add_my_name, client, name, players, logger)
     launch_factorio(factorio_exe_path, develop_mode)
