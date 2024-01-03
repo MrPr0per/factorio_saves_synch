@@ -3,6 +3,6 @@ pip install yadisk
 pip install requests
 pip install colorama
 
-python update_saves.py
+python reset_online.py
 
 pause

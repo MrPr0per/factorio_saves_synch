@@ -59,8 +59,10 @@ def get_players_list(client: yadisk.Client, logger: Logger):
     return players
 
 
-def update_players_list(mode: PlayersUpdateModes, client: yadisk.Client, name: str, players, logger: Logger):
+def update_players_list(mode: PlayersUpdateModes, client: yadisk.Client, name: str, logger: Logger):
     logger.log_if_necessary('обновление списка игроков онлайн {', deep_delta=1)
+
+    players = get_players_list(client, logger)
 
     if mode == PlayersUpdateModes.add_my_name:
         logger.log_if_necessary(f'готово: users_online = {players} + {name}')
@@ -155,7 +157,7 @@ def update_saves(mode: SavesUpdateModes, client: yadisk.Client, factorio_saves_p
             if yadisk_filepath is not None:
                 client.remove(yadisk_filepath, permanently=True)
             local_filename = os.path.basename(local_filepath)
-            client.upload(local_filepath, f'disk:/factorio/{local_filename}')
+            client.upload(local_filepath, f'disk:/factorio/{local_filename}', timeout=9999)
 
             logger.log_if_necessary('готово')
     else:
@@ -196,9 +198,9 @@ def main():
         print(Style.RESET_ALL)
         update_saves(SavesUpdateModes.download_save, client, factorio_saves_path, logger)
 
-    update_players_list(PlayersUpdateModes.add_my_name, client, name, players, logger)
+    update_players_list(PlayersUpdateModes.add_my_name, client, name, logger)
     launch_factorio(factorio_exe_path, develop_mode)
-    update_players_list(PlayersUpdateModes.del_my_name, client, name, players, logger)
+    update_players_list(PlayersUpdateModes.del_my_name, client, name, logger)
     update_saves(SavesUpdateModes.upload_save, client, factorio_saves_path, logger)
     client.close()
     logger.log_if_necessary('end')
