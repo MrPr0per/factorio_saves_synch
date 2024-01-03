@@ -1,5 +1,6 @@
 import json
 import subprocess
+import sys
 import time
 
 import yadisk
@@ -39,6 +40,7 @@ class Logger:
 
         if deep_delta < 0: self.current_deep += deep_delta
         print(('    ' * self.current_deep + text).ljust(self.column_width), end=end)
+        sys.stdout.flush()  # без этого в терминале не отображаются строки, не заканчивающиеся переводом строки
         if deep_delta > 0: self.current_deep += deep_delta
 
 
